@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip as ReTooltip,
+  ResponsiveContainer,
+} from "recharts";
+import {
   Droplets,
   Activity,
   Send,
@@ -22,6 +29,8 @@ import {
   Crosshair,
   Waves,
   Brain,
+  Globe,
+  PieChart as PieIcon,
 } from "lucide-react";
 import RiskTrendChart from "./components/RiskTrendChart";
 
@@ -31,6 +40,13 @@ interface PredictionResult {
   confidence: number;
   alert_level: string;
 }
+
+/* ---------- Pie chart mock data ---------- */
+const riskDistribution = [
+  { name: "Safe", value: 62, color: "#10b981" },
+  { name: "Warning", value: 24, color: "#f59e0b" },
+  { name: "Critical", value: 14, color: "#ef4444" },
+];
 
 /* ---------- Static data for fake telemetry / feed ---------- */
 const recentInterventions = [
@@ -56,6 +72,32 @@ const recentInterventions = [
     icon: Waves,
   },
 ];
+
+/* ---------- Pie custom tooltip ---------- */
+function PieTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { name: string; value: number; payload: { color: string } }[];
+}) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0];
+  return (
+    <div className="rounded-xl bg-white/90 backdrop-blur-xl shadow-lg ring-1 ring-white/40 px-4 py-2.5 text-xs">
+      <div className="flex items-center gap-2">
+        <span
+          className="inline-block h-2.5 w-2.5 rounded-full"
+          style={{ background: d.payload.color }}
+        />
+        <span className="font-bold text-zinc-700">{d.name}</span>
+        <span className="ml-auto font-extrabold tabular-nums text-zinc-900">
+          {d.value}%
+        </span>
+      </div>
+    </div>
+  );
+}
 
 /* ================================================================
    SDG 6 WaterHub — GovTech Command Center
@@ -127,9 +169,17 @@ export default function WaterDashboard() {
     ? Math.min(100, +(result.confidence + 1.4).toFixed(1))
     : null;
 
-  /* ================================================================
-     GLASS CARD HELPER CLASS
-     ================================================================ */
+  /* ---- map iframe src (sanitised) ---- */
+  const lat = parseFloat(formData.Latitude);
+  const lng = parseFloat(formData.Longitude);
+  const hasCoords = !isNaN(lat) && !isNaN(lng);
+  const mapSrc = hasCoords
+    ? `https://maps.google.com/maps?q=${encodeURIComponent(
+        `${lat},${lng}`
+      )}&z=15&output=embed`
+    : `https://maps.google.com/maps?q=20.5937,78.9629&z=5&output=embed`;
+
+  /* ---- glass helpers ---- */
   const glass =
     "bg-white/60 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.06)]";
   const glassHover =
@@ -140,18 +190,20 @@ export default function WaterDashboard() {
     <div className="min-h-screen bg-zinc-50 flex flex-col">
       {/* ====================== TELEMETRY STRIP ====================== */}
       <div className="bg-zinc-900 text-zinc-400 text-[0.65rem] tracking-wide font-medium">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-5 sm:px-8 py-1.5 gap-4 overflow-x-auto">
+        <div className="max-w-[90rem] mx-auto flex items-center justify-between px-5 sm:px-8 py-1.5 gap-4 overflow-x-auto">
           <span className="flex items-center gap-1.5 whitespace-nowrap">
             <Server className="h-3 w-3 text-indigo-400" />
             UPTIME <span className="text-zinc-200 ml-0.5">99.97%</span>
           </span>
           <span className="flex items-center gap-1.5 whitespace-nowrap">
             <Cpu className="h-3 w-3 text-indigo-400" />
-            PROCESSED <span className="text-zinc-200 ml-0.5">2,847 reports</span>
+            PROCESSED{" "}
+            <span className="text-zinc-200 ml-0.5">2,847 reports</span>
           </span>
           <span className="flex items-center gap-1.5 whitespace-nowrap">
             <Radio className="h-3 w-3 text-emerald-400" />
-            ACTIVE NODES <span className="text-zinc-200 ml-0.5">14 / 14</span>
+            ACTIVE NODES{" "}
+            <span className="text-zinc-200 ml-0.5">14 / 14</span>
           </span>
           <span className="hidden md:flex items-center gap-1.5 whitespace-nowrap">
             <Clock className="h-3 w-3 text-indigo-400" />
@@ -162,7 +214,7 @@ export default function WaterDashboard() {
 
       {/* ====================== HEADER ====================== */}
       <header className="sticky top-0 z-40 bg-white/60 backdrop-blur-2xl border-b border-zinc-200/60">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-5 sm:px-8 py-3">
+        <div className="max-w-[90rem] mx-auto flex items-center justify-between px-5 sm:px-8 py-3">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center h-10 w-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
               <Droplets className="h-5 w-5" />
@@ -190,30 +242,34 @@ export default function WaterDashboard() {
       </header>
 
       {/* ====================== MAIN ====================== */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-5 sm:px-8 py-8 space-y-7">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-7">
-          {/* ======================== LEFT COL — Form (4/12) ======================== */}
+      <main className="flex-1 w-full max-w-[90rem] mx-auto px-5 sm:px-8 py-6 space-y-5">
+        {/* ====================== ROW 1 — 3 Column Command Row ====================== */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          {/* ======================== COL 1 — Form (3/12) ======================== */}
           <section
-            className={`lg:col-span-4 ${glass} rounded-2xl p-6 sm:p-7 flex flex-col ${glassHover}`}
+            className={`lg:col-span-3 ${glass} rounded-2xl p-5 flex flex-col ${glassHover}`}
           >
             <div className="flex items-center gap-2.5 mb-1">
               <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 text-indigo-600">
                 <Activity className="h-4 w-4" />
               </div>
               <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 uppercase">
-                Field Report Input
+                Field Report
               </h2>
             </div>
-            <p className="text-xs text-zinc-400 mb-5 ml-[2.625rem]">
+            <p className="text-[0.65rem] text-zinc-400 mb-4 ml-[2.625rem]">
               Submit data for predictive risk analysis.
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-4 flex-1 flex flex-col">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-3 flex-1 flex flex-col"
+            >
               {/* Report Type */}
               <div>
                 <label
                   htmlFor="Report_Type"
-                  className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5"
+                  className="flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500 uppercase tracking-wider mb-1"
                 >
                   <FileWarning className="h-3 w-3" />
                   Report Type
@@ -223,7 +279,7 @@ export default function WaterDashboard() {
                   name="Report_Type"
                   value={formData.Report_Type}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-4 py-2.5 text-sm text-zinc-800
+                  className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-3 py-2 text-sm text-zinc-800
                              focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all duration-200 outline-none"
                 >
                   <option value="Leak">Leak</option>
@@ -233,11 +289,11 @@ export default function WaterDashboard() {
               </div>
 
               {/* Lat / Lng */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label
                     htmlFor="Latitude"
-                    className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5"
+                    className="flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500 uppercase tracking-wider mb-1"
                   >
                     <MapPin className="h-3 w-3" />
                     Lat
@@ -251,14 +307,14 @@ export default function WaterDashboard() {
                     onChange={handleChange}
                     required
                     placeholder="29.005"
-                    className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-4 py-2.5 text-sm text-zinc-800
+                    className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-3 py-2 text-sm text-zinc-800
                                focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all duration-200 outline-none"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="Longitude"
-                    className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5"
+                    className="flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500 uppercase tracking-wider mb-1"
                   >
                     <MapPin className="h-3 w-3" />
                     Lng
@@ -272,7 +328,7 @@ export default function WaterDashboard() {
                     onChange={handleChange}
                     required
                     placeholder="73.712"
-                    className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-4 py-2.5 text-sm text-zinc-800
+                    className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-3 py-2 text-sm text-zinc-800
                                focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all duration-200 outline-none"
                   />
                 </div>
@@ -282,7 +338,7 @@ export default function WaterDashboard() {
               <div>
                 <label
                   htmlFor="Days_Since_Last_Issue"
-                  className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5"
+                  className="flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500 uppercase tracking-wider mb-1"
                 >
                   <Calendar className="h-3 w-3" />
                   Days Since Last Issue
@@ -296,20 +352,20 @@ export default function WaterDashboard() {
                   onChange={handleChange}
                   required
                   placeholder="15"
-                  className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-4 py-2.5 text-sm text-zinc-800
+                  className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-3 py-2 text-sm text-zinc-800
                              focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all duration-200 outline-none"
                 />
               </div>
 
               {/* Submit */}
-              <div className="pt-3 mt-auto">
+              <div className="pt-2 mt-auto">
                 <button
                   type="submit"
                   disabled={loading}
                   className="w-full flex items-center justify-center gap-2 rounded-xl
                              bg-gradient-to-r from-indigo-600 to-violet-600
                              hover:from-indigo-500 hover:to-violet-500
-                             text-white font-bold py-3 px-4 text-sm tracking-wide
+                             text-white font-bold py-2.5 px-4 text-sm tracking-wide
                              shadow-lg shadow-indigo-500/25
                              focus:outline-none focus:ring-4 focus:ring-indigo-500/20
                              transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed
@@ -329,13 +385,360 @@ export default function WaterDashboard() {
                 </button>
               </div>
             </form>
+          </section>
 
-            {/* ------- Recent Interventions Feed ------- */}
-            <div className="mt-6 pt-5 border-t border-zinc-200/60">
-              <h3 className="text-[0.6rem] font-bold uppercase tracking-widest text-zinc-400 mb-3">
-                Recent Interventions
-              </h3>
-              <div className="space-y-2.5">
+          {/* ======================== COL 2 — AI Results (5/12) ======================== */}
+          <section
+            className={`lg:col-span-5 rounded-2xl p-5 transition-all duration-500 ${
+              isDanger
+                ? "bg-rose-50/80 backdrop-blur-xl border border-rose-300/50 shadow-[0_8px_32px_rgba(225,29,72,0.1)]"
+                : isSafe
+                  ? "bg-emerald-50/80 backdrop-blur-xl border border-emerald-300/50 shadow-[0_8px_32px_rgba(16,185,129,0.1)]"
+                  : `${glass}`
+            }`}
+          >
+            {/* card header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`flex items-center justify-center h-8 w-8 rounded-xl ${
+                    isDanger
+                      ? "bg-rose-200/60 text-rose-600"
+                      : isSafe
+                        ? "bg-emerald-200/60 text-emerald-600"
+                        : "bg-zinc-100 text-zinc-400"
+                  }`}
+                >
+                  {isDanger ? (
+                    <ShieldAlert className="h-4 w-4" />
+                  ) : isSafe ? (
+                    <ShieldCheck className="h-4 w-4" />
+                  ) : (
+                    <Gauge className="h-4 w-4" />
+                  )}
+                </div>
+                <h2
+                  className={`text-sm font-extrabold tracking-tight uppercase ${
+                    isDanger
+                      ? "text-rose-800"
+                      : isSafe
+                        ? "text-emerald-800"
+                        : "text-zinc-800"
+                  }`}
+                >
+                  AI Risk Assessment
+                </h2>
+              </div>
+              {result && (
+                <div
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[0.6rem] font-bold uppercase tracking-wider ${
+                    isDanger
+                      ? "bg-rose-200/60 text-rose-700"
+                      : "bg-emerald-200/60 text-emerald-700"
+                  }`}
+                >
+                  <Brain className="h-3 w-3" />
+                  Model v3.2
+                </div>
+              )}
+            </div>
+
+            {/* placeholder */}
+            {!result && !error && !loading && (
+              <div className="flex flex-col items-center justify-center py-12 text-zinc-300">
+                <Gauge className="h-14 w-14 mb-3 stroke-[1]" />
+                <p className="text-sm font-semibold text-zinc-400">
+                  Awaiting field data…
+                </p>
+                <p className="text-xs text-zinc-400 mt-1">
+                  Submit a report to activate AI analysis.
+                </p>
+              </div>
+            )}
+
+            {/* loading */}
+            {loading && (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-full bg-indigo-400/20 animate-ping" />
+                  <Loader2 className="relative h-10 w-10 animate-spin text-indigo-500" />
+                </div>
+                <p className="text-sm font-semibold text-zinc-500 mt-4">
+                  Running prediction model…
+                </p>
+                <p className="text-[0.65rem] text-zinc-400 mt-0.5">
+                  Correlating sensor data across 14 nodes
+                </p>
+              </div>
+            )}
+
+            {/* error */}
+            {error && (
+              <div className="rounded-xl bg-rose-100/60 border border-rose-200 p-4 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-rose-800">
+                    Connection Error
+                  </p>
+                  <p className="text-xs text-rose-600 mt-0.5">{error}</p>
+                </div>
+              </div>
+            )}
+
+            {/* result */}
+            {result && (
+              <div className="space-y-4">
+                {/* Metrics row */}
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Severity */}
+                  <div
+                    className={`rounded-2xl p-4 transition-all duration-300 ${
+                      isDanger
+                        ? "bg-gradient-to-br from-rose-100/80 to-rose-50/60 border border-rose-200/40"
+                        : "bg-gradient-to-br from-emerald-100/80 to-emerald-50/60 border border-emerald-200/40"
+                    }`}
+                  >
+                    <p className="text-[0.55rem] uppercase tracking-[0.15em] font-bold text-zinc-500 mb-1.5">
+                      Severity
+                    </p>
+                    <p
+                      className={`text-xl font-extrabold tracking-tight ${
+                        isDanger ? "text-rose-700" : "text-emerald-700"
+                      }`}
+                    >
+                      {result.prediction}
+                    </p>
+                  </div>
+
+                  {/* Confidence */}
+                  <div
+                    className={`rounded-2xl p-4 transition-all duration-300 ${
+                      isDanger
+                        ? "bg-gradient-to-br from-rose-100/80 to-rose-50/60 border border-rose-200/40"
+                        : "bg-gradient-to-br from-emerald-100/80 to-emerald-50/60 border border-emerald-200/40"
+                    }`}
+                  >
+                    <p className="text-[0.55rem] uppercase tracking-[0.15em] font-bold text-zinc-500 mb-1.5">
+                      Confidence
+                    </p>
+                    <div className="flex items-baseline gap-0.5">
+                      <span
+                        className={`text-2xl font-extrabold tabular-nums tracking-tight ${
+                          isDanger ? "text-rose-700" : "text-emerald-700"
+                        }`}
+                      >
+                        {result.confidence}
+                      </span>
+                      <span className="text-xs font-bold text-zinc-400">%</span>
+                    </div>
+                    <div className="mt-2 h-1.5 rounded-full bg-white/80 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                          isDanger ? "bg-rose-500" : "bg-emerald-500"
+                        }`}
+                        style={{ width: `${result.confidence}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Alert Level */}
+                  <div
+                    className={`rounded-2xl p-4 flex flex-col items-center justify-center text-center transition-all duration-300 ${
+                      isDanger
+                        ? "bg-gradient-to-br from-rose-100/80 to-rose-50/60 border border-rose-200/40"
+                        : "bg-gradient-to-br from-emerald-100/80 to-emerald-50/60 border border-emerald-200/40"
+                    }`}
+                  >
+                    {isDanger ? (
+                      <AlertCircle className="h-7 w-7 text-rose-400 mb-1" />
+                    ) : (
+                      <CheckCircle2 className="h-7 w-7 text-emerald-400 mb-1" />
+                    )}
+                    <p
+                      className={`text-sm font-extrabold tracking-tight ${
+                        isDanger ? "text-rose-700" : "text-emerald-700"
+                      }`}
+                    >
+                      {result.alert_level}
+                    </p>
+                  </div>
+                </div>
+
+                {/* AI Confidence Analysis breakdown */}
+                <div
+                  className={`rounded-2xl p-4 border transition-all duration-300 ${
+                    isDanger
+                      ? "bg-rose-50/40 border-rose-200/30"
+                      : "bg-emerald-50/40 border-emerald-200/30"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <Brain
+                      className={`h-3.5 w-3.5 ${
+                        isDanger ? "text-rose-500" : "text-emerald-500"
+                      }`}
+                    />
+                    <h3 className="text-[0.55rem] font-bold uppercase tracking-[0.15em] text-zinc-500">
+                      AI Confidence Analysis
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      {
+                        label: "Historical Variance",
+                        value: `±${histVariance}%`,
+                        sub: "7-day window",
+                      },
+                      {
+                        label: "Sensor Reliability",
+                        value: `${sensorReliability}%`,
+                        sub: "14 nodes active",
+                      },
+                      {
+                        label: "Model Agreement",
+                        value: `${modelAgreement}%`,
+                        sub: "3 / 3 models",
+                      },
+                    ].map((metric) => (
+                      <div key={metric.label} className="text-center">
+                        <p className="text-[0.5rem] uppercase tracking-widest font-semibold text-zinc-400 mb-0.5">
+                          {metric.label}
+                        </p>
+                        <p
+                          className={`text-base font-extrabold tabular-nums ${
+                            isDanger ? "text-rose-700" : "text-emerald-700"
+                          }`}
+                        >
+                          {metric.value}
+                        </p>
+                        <p className="text-[0.5rem] text-zinc-400 mt-0.5">
+                          {metric.sub}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* ======================== COL 3 — Map + Pie (4/12) ======================== */}
+          <div className="lg:col-span-4 flex flex-col gap-5">
+            {/* ---- Geospatial Tracking Map ---- */}
+            <section className={`${glass} rounded-2xl p-5 ${glassHover}`}>
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 text-indigo-600">
+                  <Globe className="h-4 w-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 uppercase">
+                    Geospatial Tracking
+                  </h2>
+                  <p className="text-[0.6rem] text-zinc-400 mt-0.5">
+                    {hasCoords
+                      ? `${lat.toFixed(3)}°N, ${lng.toFixed(3)}°E`
+                      : "Enter coordinates to locate"}
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-xl overflow-hidden border border-zinc-200/60 aspect-[4/3]">
+                <iframe
+                  title="Geospatial Tracking Map"
+                  src={mapSrc}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="w-full h-full"
+                />
+              </div>
+            </section>
+
+            {/* ---- Live Risk Distribution — Donut ---- */}
+            <section className={`${glass} rounded-2xl p-5 ${glassHover}`}>
+              <div className="flex items-center gap-2.5 mb-2">
+                <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 text-indigo-600">
+                  <PieIcon className="h-4 w-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 uppercase">
+                    Live Risk Distribution
+                  </h2>
+                  <p className="text-[0.6rem] text-zinc-400 mt-0.5">
+                    Regional water zone status
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                {/* Donut */}
+                <div className="w-40 h-40 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={riskDistribution}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={42}
+                        outerRadius={65}
+                        strokeWidth={3}
+                        stroke="#fafafa"
+                      >
+                        {riskDistribution.map((entry) => (
+                          <Cell key={entry.name} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ReTooltip content={<PieTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Legend */}
+                <div className="space-y-2.5 flex-1">
+                  {riskDistribution.map((zone) => (
+                    <div key={zone.name} className="flex items-center gap-2.5">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full shrink-0"
+                        style={{ background: zone.color }}
+                      />
+                      <span className="text-xs font-semibold text-zinc-600 flex-1">
+                        {zone.name}
+                      </span>
+                      <span className="text-sm font-extrabold tabular-nums text-zinc-800">
+                        {zone.value}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        {/* ====================== ROW 2 — Trend Chart + Interventions + Community ====================== */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          {/* ---- Trend Chart (8/12) ---- */}
+          <div className="lg:col-span-8">
+            <RiskTrendChart />
+          </div>
+
+          {/* ---- Right sidebar (4/12): Interventions + Community ---- */}
+          <div className="lg:col-span-4 flex flex-col gap-5">
+            {/* Recent Interventions */}
+            <section className={`${glass} rounded-2xl p-5 ${glassHover}`}>
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-emerald-100 text-emerald-600">
+                  <CheckCircle2 className="h-4 w-4" />
+                </div>
+                <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 uppercase">
+                  Recent Interventions
+                </h2>
+              </div>
+              <div className="space-y-2">
                 {recentInterventions.map((item) => (
                   <div
                     key={item.id}
@@ -360,301 +763,59 @@ export default function WaterDashboard() {
                   </div>
                 ))}
               </div>
-            </div>
-          </section>
-
-          {/* ======================== CENTER + RIGHT (8/12) ======================== */}
-          <div className="lg:col-span-8 flex flex-col gap-7">
-            {/* ---------- AI Results Card ---------- */}
-            <section
-              className={`rounded-2xl p-6 sm:p-7 transition-all duration-500 ${
-                isDanger
-                  ? "bg-rose-50/80 backdrop-blur-xl border border-rose-300/50 shadow-[0_8px_32px_rgba(225,29,72,0.1)]"
-                  : isSafe
-                    ? "bg-emerald-50/80 backdrop-blur-xl border border-emerald-300/50 shadow-[0_8px_32px_rgba(16,185,129,0.1)]"
-                    : `${glass}`
-              }`}
-            >
-              {/* card header */}
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className={`flex items-center justify-center h-8 w-8 rounded-xl ${
-                      isDanger
-                        ? "bg-rose-200/60 text-rose-600"
-                        : isSafe
-                          ? "bg-emerald-200/60 text-emerald-600"
-                          : "bg-zinc-100 text-zinc-400"
-                    }`}
-                  >
-                    {isDanger ? (
-                      <ShieldAlert className="h-4 w-4" />
-                    ) : isSafe ? (
-                      <ShieldCheck className="h-4 w-4" />
-                    ) : (
-                      <Gauge className="h-4 w-4" />
-                    )}
-                  </div>
-                  <h2
-                    className={`text-sm font-extrabold tracking-tight uppercase ${
-                      isDanger
-                        ? "text-rose-800"
-                        : isSafe
-                          ? "text-emerald-800"
-                          : "text-zinc-800"
-                    }`}
-                  >
-                    AI Risk Assessment
-                  </h2>
-                </div>
-                {result && (
-                  <div
-                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[0.6rem] font-bold uppercase tracking-wider ${
-                      isDanger
-                        ? "bg-rose-200/60 text-rose-700"
-                        : "bg-emerald-200/60 text-emerald-700"
-                    }`}
-                  >
-                    <Brain className="h-3 w-3" />
-                    Model v3.2
-                  </div>
-                )}
-              </div>
-
-              {/* placeholder */}
-              {!result && !error && !loading && (
-                <div className="flex flex-col items-center justify-center py-14 text-zinc-300">
-                  <Gauge className="h-16 w-16 mb-3 stroke-[1]" />
-                  <p className="text-sm font-semibold text-zinc-400">
-                    Awaiting field data…
-                  </p>
-                  <p className="text-xs text-zinc-400 mt-1">
-                    Submit a report to activate AI analysis.
-                  </p>
-                </div>
-              )}
-
-              {/* loading */}
-              {loading && (
-                <div className="flex flex-col items-center justify-center py-14">
-                  <div className="relative">
-                    <div className="absolute inset-0 rounded-full bg-indigo-400/20 animate-ping" />
-                    <Loader2 className="relative h-12 w-12 animate-spin text-indigo-500" />
-                  </div>
-                  <p className="text-sm font-semibold text-zinc-500 mt-4">
-                    Running prediction model…
-                  </p>
-                  <p className="text-[0.65rem] text-zinc-400 mt-0.5">
-                    Correlating sensor data across 14 nodes
-                  </p>
-                </div>
-              )}
-
-              {/* error */}
-              {error && (
-                <div className="rounded-xl bg-rose-100/60 border border-rose-200 p-4 flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-bold text-rose-800">
-                      Connection Error
-                    </p>
-                    <p className="text-xs text-rose-600 mt-0.5">{error}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* result */}
-              {result && (
-                <div className="space-y-5">
-                  {/* Primary metrics row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* Severity */}
-                    <div
-                      className={`rounded-2xl p-5 transition-all duration-300 ${
-                        isDanger
-                          ? "bg-gradient-to-br from-rose-100/80 to-rose-50/60 border border-rose-200/40"
-                          : "bg-gradient-to-br from-emerald-100/80 to-emerald-50/60 border border-emerald-200/40"
-                      }`}
-                    >
-                      <p className="text-[0.6rem] uppercase tracking-[0.15em] font-bold text-zinc-500 mb-2">
-                        Severity
-                      </p>
-                      <p
-                        className={`text-2xl font-extrabold tracking-tight ${
-                          isDanger ? "text-rose-700" : "text-emerald-700"
-                        }`}
-                      >
-                        {result.prediction}
-                      </p>
-                    </div>
-
-                    {/* Confidence */}
-                    <div
-                      className={`rounded-2xl p-5 transition-all duration-300 ${
-                        isDanger
-                          ? "bg-gradient-to-br from-rose-100/80 to-rose-50/60 border border-rose-200/40"
-                          : "bg-gradient-to-br from-emerald-100/80 to-emerald-50/60 border border-emerald-200/40"
-                      }`}
-                    >
-                      <p className="text-[0.6rem] uppercase tracking-[0.15em] font-bold text-zinc-500 mb-2">
-                        Confidence
-                      </p>
-                      <div className="flex items-baseline gap-1">
-                        <span
-                          className={`text-3xl font-extrabold tabular-nums tracking-tight ${
-                            isDanger ? "text-rose-700" : "text-emerald-700"
-                          }`}
-                        >
-                          {result.confidence}
-                        </span>
-                        <span className="text-sm font-bold text-zinc-400">%</span>
-                      </div>
-                      <div className="mt-3 h-1.5 rounded-full bg-white/80 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                            isDanger ? "bg-rose-500" : "bg-emerald-500"
-                          }`}
-                          style={{ width: `${result.confidence}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Alert Level */}
-                    <div
-                      className={`rounded-2xl p-5 flex flex-col items-center justify-center text-center transition-all duration-300 ${
-                        isDanger
-                          ? "bg-gradient-to-br from-rose-100/80 to-rose-50/60 border border-rose-200/40"
-                          : "bg-gradient-to-br from-emerald-100/80 to-emerald-50/60 border border-emerald-200/40"
-                      }`}
-                    >
-                      {isDanger ? (
-                        <AlertCircle className="h-9 w-9 text-rose-400 mb-1.5" />
-                      ) : (
-                        <CheckCircle2 className="h-9 w-9 text-emerald-400 mb-1.5" />
-                      )}
-                      <p
-                        className={`text-base font-extrabold tracking-tight ${
-                          isDanger ? "text-rose-700" : "text-emerald-700"
-                        }`}
-                      >
-                        {result.alert_level}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* AI Confidence Analysis breakdown */}
-                  <div
-                    className={`rounded-2xl p-5 border transition-all duration-300 ${
-                      isDanger
-                        ? "bg-rose-50/40 border-rose-200/30"
-                        : "bg-emerald-50/40 border-emerald-200/30"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-4">
-                      <Brain
-                        className={`h-4 w-4 ${
-                          isDanger ? "text-rose-500" : "text-emerald-500"
-                        }`}
-                      />
-                      <h3 className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-zinc-500">
-                        AI Confidence Analysis
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      {[
-                        {
-                          label: "Historical Variance",
-                          value: `±${histVariance}%`,
-                          sub: "7-day window",
-                        },
-                        {
-                          label: "Sensor Reliability",
-                          value: `${sensorReliability}%`,
-                          sub: "14 nodes active",
-                        },
-                        {
-                          label: "Model Agreement",
-                          value: `${modelAgreement}%`,
-                          sub: "3 / 3 models",
-                        },
-                      ].map((metric) => (
-                        <div key={metric.label} className="text-center">
-                          <p className="text-[0.55rem] uppercase tracking-widest font-semibold text-zinc-400 mb-1">
-                            {metric.label}
-                          </p>
-                          <p
-                            className={`text-lg font-extrabold tabular-nums ${
-                              isDanger ? "text-rose-700" : "text-emerald-700"
-                            }`}
-                          >
-                            {metric.value}
-                          </p>
-                          <p className="text-[0.55rem] text-zinc-400 mt-0.5">
-                            {metric.sub}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
             </section>
 
-            {/* ---------- Trend Chart ---------- */}
-            <RiskTrendChart />
+            {/* Community Insights — compact */}
+            <section className={`${glass} rounded-2xl p-5 ${glassHover}`}>
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 text-indigo-600">
+                  <Activity className="h-4 w-4" />
+                </div>
+                <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 uppercase">
+                  SDG 6 Impact
+                </h2>
+              </div>
+
+              <div className="space-y-3">
+                <div className="rounded-xl bg-gradient-to-br from-rose-50/80 to-rose-100/40 border border-rose-200/40 p-3.5">
+                  <h3 className="text-[0.55rem] font-bold text-rose-600 uppercase tracking-[0.15em] mb-1">
+                    The Challenge
+                  </h3>
+                  <p className="text-xs text-zinc-600 leading-relaxed font-medium">
+                    Millions lack real-time water safety data, leading to
+                    preventable health crises and reactive-only responses.
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-gradient-to-br from-emerald-50/80 to-emerald-100/40 border border-emerald-200/40 p-3.5">
+                  <h3 className="text-[0.55rem] font-bold text-emerald-600 uppercase tracking-[0.15em] mb-1">
+                    Our Impact
+                  </h3>
+                  <p className="text-xs text-zinc-600 leading-relaxed font-medium">
+                    <strong>95%+ accuracy</strong> predictive risk scores
+                    enable proactive governance — fixing infrastructure{" "}
+                    <em>before</em> contamination spreads.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {[
+                  "SDG 6.1 — Safe Water",
+                  "SDG 6.3 — Quality",
+                  "SDG 6.b — Community",
+                ].map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-indigo-50 text-indigo-600 text-[0.6rem] font-semibold px-2.5 py-0.5 border border-indigo-200/40"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </section>
           </div>
         </div>
-
-        {/* =============== Community Insights =============== */}
-        <section className={`${glass} rounded-2xl p-6 sm:p-7`}>
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 text-indigo-600">
-              <Activity className="h-4 w-4" />
-            </div>
-            <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 uppercase">
-              Community Insights &amp; SDG 6 Impact
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="rounded-2xl bg-gradient-to-br from-rose-50/80 to-rose-100/40 border border-rose-200/40 p-5">
-              <h3 className="text-[0.6rem] font-bold text-rose-600 uppercase tracking-[0.15em] mb-2">
-                The Challenge
-              </h3>
-              <p className="text-sm text-zinc-600 leading-relaxed font-medium">
-                Millions in peri-urban areas lack real-time data on water
-                safety, leading to preventable health crises. Communities react
-                to contamination events only <em>after</em> people fall ill.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-gradient-to-br from-emerald-50/80 to-emerald-100/40 border border-emerald-200/40 p-5">
-              <h3 className="text-[0.6rem] font-bold text-emerald-600 uppercase tracking-[0.15em] mb-2">
-                Our Impact
-              </h3>
-              <p className="text-sm text-zinc-600 leading-relaxed font-medium">
-                This tool delivers <strong>95%+ accuracy</strong> predictive
-                risk scores, enabling local governance to prioritise repairs{" "}
-                <em>before</em> contamination spreads — reactive to proactive.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            {[
-              "SDG 6.1 — Safe Drinking Water",
-              "SDG 6.3 — Water Quality",
-              "SDG 6.b — Community Participation",
-            ].map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-indigo-50 text-indigo-600 text-[0.65rem] font-semibold px-3 py-1 border border-indigo-200/40"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        </section>
       </main>
 
       {/* ====================== FOOTER ====================== */}
