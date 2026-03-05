@@ -44,8 +44,11 @@ def _detect_columns() -> None:
     print(f"[INFO] Features : {FEATURE_COLUMNS}")
     print(f"[INFO] Target   : {TARGET_COLUMN}")
 
+    # Detect categorical columns — pd.api.types handles both
+    # "object" (pandas <3) and "string"/"StringDtype" (pandas 3+)
     _categorical_features = [
-        col for col in FEATURE_COLUMNS if _preview[col].dtype == "object"
+        col for col in FEATURE_COLUMNS
+        if not pd.api.types.is_numeric_dtype(_preview[col])
     ]
     _numeric_features = [
         col for col in FEATURE_COLUMNS if col not in _categorical_features
