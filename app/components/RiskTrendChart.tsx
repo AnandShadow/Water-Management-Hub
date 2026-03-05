@@ -34,8 +34,8 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl bg-white shadow-lg ring-1 ring-slate-200 px-4 py-3 text-xs">
-      <p className="font-semibold text-slate-700 mb-1.5">{label}</p>
+    <div className="rounded-xl bg-white/90 backdrop-blur-xl shadow-lg ring-1 ring-white/40 px-4 py-3 text-xs">
+      <p className="font-bold text-zinc-700 mb-1.5">{label}</p>
       {payload.map((entry) => (
         <p key={entry.name} className="flex items-center gap-2" style={{ color: entry.color }}>
           <span className="inline-block h-2 w-2 rounded-full" style={{ background: entry.color }} />
@@ -48,32 +48,34 @@ function ChartTooltip({
 }
 
 /* ================================================================
-   RiskTrendChart — 7-Day Trend (LineChart)
+   RiskTrendChart — 7-Day Trend (LineChart · glassmorphism)
    ================================================================ */
 export default function RiskTrendChart() {
   return (
-    <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+    <section className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.06)] rounded-2xl p-6 sm:p-7 hover:shadow-[0_12px_40px_rgba(0,0,0,0.09)] hover:-translate-y-0.5 transition-all duration-300">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-blue-600" />
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 text-indigo-600">
+            <BarChart3 className="h-4 w-4" />
+          </div>
           <div>
-            <h2 className="text-base font-semibold text-slate-800">
-              7-Day Regional Water Infrastructure Risk Trend
+            <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 uppercase">
+              7-Day Risk Trend
             </h2>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Total field reports vs. AI-predicted critical incidents.
+            <p className="text-xs text-zinc-400 mt-0.5">
+              Total reports vs. AI-predicted critical incidents
             </p>
           </div>
         </div>
 
         {/* Legend pills */}
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600">
-            <span className="h-2.5 w-2.5 rounded-full bg-blue-500" /> Total Reports
+          <span className="inline-flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500">
+            <span className="h-2 w-2 rounded-full bg-indigo-500" /> Total Reports
           </span>
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600">
-            <span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> Critical Incidents
+          <span className="inline-flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500">
+            <span className="h-2 w-2 rounded-full bg-rose-500" /> Critical
           </span>
         </div>
       </div>
@@ -82,15 +84,15 @@ export default function RiskTrendChart() {
       <div className="w-full h-64 sm:h-72">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" strokeOpacity={0.5} />
             <XAxis
               dataKey="day"
-              tick={{ fontSize: 12, fill: "#64748b" }}
-              axisLine={{ stroke: "#e2e8f0" }}
+              tick={{ fontSize: 11, fill: "#a1a1aa", fontWeight: 500 }}
+              axisLine={{ stroke: "#e4e4e7" }}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 12, fill: "#64748b" }}
+              tick={{ fontSize: 11, fill: "#a1a1aa", fontWeight: 500 }}
               axisLine={false}
               tickLine={false}
             />
@@ -100,9 +102,9 @@ export default function RiskTrendChart() {
               type="monotone"
               dataKey="totalReports"
               name="Total Reports"
-              stroke="#3b82f6"
+              stroke="#6366f1"
               strokeWidth={2.5}
-              dot={{ r: 4, fill: "#3b82f6", strokeWidth: 2, stroke: "#fff" }}
+              dot={{ r: 4, fill: "#6366f1", strokeWidth: 2, stroke: "#fff" }}
               activeDot={{ r: 6, strokeWidth: 2, stroke: "#fff" }}
             />
             <Line
