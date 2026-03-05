@@ -30,8 +30,8 @@ interface PredictionResult {
    ================================================================ */
 export default function WaterDashboard() {
   const [formData, setFormData] = useState({
-    latitude: "",
-    longitude: "",
+    Latitude: "",
+    Longitude: "",
     Report_Type: "Leak",
     Days_Since_Last_Issue: "",
   });
@@ -53,8 +53,8 @@ export default function WaterDashboard() {
     try {
       const payload = {
         Report_Type: formData.Report_Type,
-        latitude: parseFloat(formData.latitude),
-        longitude: parseFloat(formData.longitude),
+        Latitude: parseFloat(formData.Latitude),
+        Longitude: parseFloat(formData.Longitude),
         Days_Since_Last_Issue: parseInt(formData.Days_Since_Last_Issue, 10),
       };
 
@@ -154,7 +154,7 @@ export default function WaterDashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label
-                    htmlFor="latitude"
+                    htmlFor="Latitude"
                     className="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1.5"
                   >
                     <MapPin className="h-3.5 w-3.5 text-slate-400" />
@@ -163,9 +163,9 @@ export default function WaterDashboard() {
                   <input
                     type="number"
                     step="any"
-                    id="latitude"
-                    name="latitude"
-                    value={formData.latitude}
+                    id="Latitude"
+                    name="Latitude"
+                    value={formData.Latitude}
                     onChange={handleChange}
                     required
                     placeholder="29.005"
@@ -175,7 +175,7 @@ export default function WaterDashboard() {
                 </div>
                 <div>
                   <label
-                    htmlFor="longitude"
+                    htmlFor="Longitude"
                     className="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1.5"
                   >
                     <MapPin className="h-3.5 w-3.5 text-slate-400" />
@@ -184,9 +184,9 @@ export default function WaterDashboard() {
                   <input
                     type="number"
                     step="any"
-                    id="longitude"
-                    name="longitude"
-                    value={formData.longitude}
+                    id="Longitude"
+                    name="Longitude"
+                    value={formData.Longitude}
                     onChange={handleChange}
                     required
                     placeholder="73.712"
