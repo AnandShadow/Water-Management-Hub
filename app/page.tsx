@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import RiskTrendChart from "./components/RiskTrendChart";
 
 /* ---------- Types ---------- */
 interface PredictionResult {
@@ -401,6 +402,9 @@ export default function WaterDashboard() {
             )}
           </section>
         </div>
+
+        {/* =============== 7-Day Water Risk Trend Chart =============== */}
+        <RiskTrendChart />
 
         {/* =============== Community Insights — SDG 6 Impact =============== */}
         <section className="mt-10 bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
