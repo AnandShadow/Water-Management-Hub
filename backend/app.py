@@ -25,29 +25,37 @@ MODEL_PATH = os.path.join(BASE_DIR, "water_risk_model.pkl")
 ENCODERS_PATH = os.path.join(BASE_DIR, "label_encoders.pkl")
 
 # ---------------------------------------------------------------------------
-# Auto-detect columns from CSV header
+# Column detection — deferred to a function so it doesn't crash at import
 # ---------------------------------------------------------------------------
-_preview = pd.read_csv(CSV_PATH, nrows=3)
-_all_columns = list(_preview.columns)
-FEATURE_COLUMNS = _all_columns[:-1]          # every column except the last
-TARGET_COLUMN = _all_columns[-1]             # last column is the target
-print(f"[INFO] Features : {FEATURE_COLUMNS}")
-print(f"[INFO] Target   : {TARGET_COLUMN}")
+FEATURE_COLUMNS: list[str] = []
+TARGET_COLUMN: str = ""
+_categorical_features: list[str] = []
+_numeric_features: list[str] = []
 
-# Identify which feature columns are categorical (object / string dtype)
-_categorical_features = [
-    col for col in FEATURE_COLUMNS if _preview[col].dtype == "object"
-]
-_numeric_features = [
-    col for col in FEATURE_COLUMNS if col not in _categorical_features
-]
-print(f"[INFO] Categorical features: {_categorical_features}")
-print(f"[INFO] Numeric features    : {_numeric_features}")
+
+def _detect_columns() -> None:
+    """Read CSV header and auto-detect feature / target columns."""
+    global FEATURE_COLUMNS, TARGET_COLUMN, _categorical_features, _numeric_features
+
+    _preview = pd.read_csv(CSV_PATH, nrows=3)
+    _all_columns = list(_preview.columns)
+    FEATURE_COLUMNS = _all_columns[:-1]
+    TARGET_COLUMN = _all_columns[-1]
+    print(f"[INFO] Features : {FEATURE_COLUMNS}")
+    print(f"[INFO] Target   : {TARGET_COLUMN}")
+
+    _categorical_features = [
+        col for col in FEATURE_COLUMNS if _preview[col].dtype == "object"
+    ]
+    _numeric_features = [
+        col for col in FEATURE_COLUMNS if col not in _categorical_features
+    ]
+    print(f"[INFO] Categorical features: {_categorical_features}")
+    print(f"[INFO] Numeric features    : {_numeric_features}")
+
 
 # ---------------------------------------------------------------------------
-# Pydantic request model — built dynamically but we know the schema:
-#   Latitude: float, Longitude: float, Report_Type: str,
-#   Days_Since_Last_Issue: int
+# Pydantic request model
 # ---------------------------------------------------------------------------
 class WaterMetrics(BaseModel):
     Latitude: float
@@ -69,12 +77,12 @@ class WaterMetrics(BaseModel):
 # Global state
 # ---------------------------------------------------------------------------
 model: RandomForestClassifier | None = None
-label_encoders: dict[str, LabelEncoder] = {}   # one per categorical column
+label_encoders: dict[str, LabelEncoder] = {}
 target_encoder: LabelEncoder | None = None
 
 
 def _train_model() -> None:
-    """Read CSV ➜ encode ➜ train RandomForestClassifier ➜ persist."""
+    """Read CSV → encode → train RandomForestClassifier → persist."""
     global model, label_encoders, target_encoder
 
     print("[TRAIN] Reading dataset …")
@@ -125,6 +133,7 @@ def _load_model() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ---- startup ----
+    _detect_columns()
     if os.path.exists(MODEL_PATH) and os.path.exists(ENCODERS_PATH):
         _load_model()
     else:
@@ -220,4 +229,5 @@ async def predict(metrics: WaterMetrics):
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=True)
