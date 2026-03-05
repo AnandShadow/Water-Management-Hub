@@ -4,7 +4,6 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect } from "react";
-import { useTheme } from "next-themes";
 
 /* Fix Leaflet's default marker icon paths broken by bundlers */
 const markerIcon = new L.Icon({
@@ -32,16 +31,6 @@ interface LeafletMapProps {
 }
 
 export default function LeafletMap({ latitude, longitude }: LeafletMapProps) {
-  const { theme } = useTheme();
-  const tileUrl =
-    theme === "dark"
-      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-      : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-  const tileAttribution =
-    theme === "dark"
-      ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
-      : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
-
   return (
     <MapContainer
       center={[latitude, longitude]}
@@ -51,8 +40,8 @@ export default function LeafletMap({ latitude, longitude }: LeafletMapProps) {
       style={{ minHeight: "100%" }}
     >
       <TileLayer
-        attribution={tileAttribution}
-        url={tileUrl}
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <Marker position={[latitude, longitude]} icon={markerIcon}>
         <Popup>
