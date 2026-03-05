@@ -3,6 +3,9 @@
 > **Predictive Water Risk Management Platform**
 > Leveraging Machine Learning to support UN Sustainable Development Goal 6: Clean Water and Sanitation.
 
+**Live Demo:** [https://water-management-hub.vercel.app](https://water-management-hub.vercel.app)  
+**Backend API:** [https://water-management-hub.onrender.com](https://water-management-hub.onrender.com)
+
 ---
 
 ## 1. Project Overview
@@ -162,6 +165,8 @@ npm run dev
 ```
 
 Open **http://localhost:3000** and submit water metrics to get a real-time risk prediction.
+
+Or visit the live deployment at **[https://water-management-hub.vercel.app](https://water-management-hub.vercel.app)**.
 
 ---
 
