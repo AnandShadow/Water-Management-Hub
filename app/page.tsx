@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import {
   PieChart,
   Pie,
@@ -32,6 +33,8 @@ import {
   Globe,
   PieChart as PieIcon,
   Navigation,
+  Moon,
+  Sun,
 } from "lucide-react";
 import RiskTrendChart from "./components/RiskTrendChart";
 import MapComponent from "./components/MapComponent";
@@ -86,14 +89,14 @@ function PieTooltip({
   if (!active || !payload?.length) return null;
   const d = payload[0];
   return (
-    <div className="rounded-xl bg-white/90 backdrop-blur-xl shadow-lg ring-1 ring-white/40 px-4 py-2.5 text-xs">
+    <div className="rounded-xl bg-white/90 dark:bg-zinc-800/90 backdrop-blur-xl shadow-lg ring-1 ring-white/40 dark:ring-zinc-700/40 px-4 py-2.5 text-xs">
       <div className="flex items-center gap-2">
         <span
           className="inline-block h-2.5 w-2.5 rounded-full"
           style={{ background: d.payload.color }}
         />
-        <span className="font-bold text-zinc-700">{d.name}</span>
-        <span className="ml-auto font-extrabold tabular-nums text-zinc-900">
+        <span className="font-bold text-zinc-700 dark:text-zinc-200">{d.name}</span>
+        <span className="ml-auto font-extrabold tabular-nums text-zinc-900 dark:text-white">
           {d.value}%
         </span>
       </div>
@@ -105,6 +108,10 @@ function PieTooltip({
    SDG 6 WaterHub — GovTech Command Center
    ================================================================ */
 export default function WaterDashboard() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const [formData, setFormData] = useState({
     Latitude: "",
     Longitude: "",
@@ -247,13 +254,13 @@ export default function WaterDashboard() {
 
   /* ---- glass helpers ---- */
   const glass =
-    "bg-white/60 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.06)]";
+    "bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/40 dark:border-zinc-700/40 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]";
   const glassHover =
-    "hover:shadow-[0_12px_40px_rgba(0,0,0,0.09)] hover:-translate-y-0.5 transition-all duration-300";
+    "hover:shadow-[0_12px_40px_rgba(0,0,0,0.09)] dark:hover:shadow-[0_12px_40px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all duration-300";
 
   /* ================================================================ JSX ================================================================ */
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col transition-colors duration-300">
       {/* ====================== TELEMETRY STRIP ====================== */}
       <div className="bg-zinc-900 text-zinc-400 text-[0.65rem] tracking-wide font-medium">
         <div className="max-w-[90rem] mx-auto flex items-center justify-between px-5 sm:px-8 py-1.5 gap-4 overflow-x-auto">
@@ -279,30 +286,51 @@ export default function WaterDashboard() {
       </div>
 
       {/* ====================== HEADER ====================== */}
-      <header className="sticky top-0 z-40 bg-white/60 backdrop-blur-2xl border-b border-zinc-200/60">
+      <header className="sticky top-0 z-40 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border-b border-zinc-200/60 dark:border-zinc-700/60">
         <div className="max-w-[90rem] mx-auto flex items-center justify-between px-5 sm:px-8 py-3">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center h-10 w-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
               <Droplets className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-lg font-extrabold tracking-tight text-zinc-900">
+              <h1 className="text-lg font-extrabold tracking-tight text-zinc-900 dark:text-white">
                 SDG&nbsp;6 WaterHub
               </h1>
-              <p className="text-[0.6rem] font-medium text-zinc-400 tracking-widest uppercase -mt-0.5">
+              <p className="text-[0.6rem] font-medium text-zinc-400 dark:text-zinc-500 tracking-widest uppercase -mt-0.5">
                 Command Center
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200/60 px-3 py-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="text-[0.65rem] font-semibold text-emerald-700 tracking-wide">
-              AI ENGINE ONLINE
-            </span>
+          <div className="flex items-center gap-3">
+            {/* Theme Toggle */}
+            <button
+              type="button"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="flex items-center justify-center h-9 w-9 rounded-xl
+                         bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/60
+                         text-zinc-600 dark:text-zinc-300
+                         hover:bg-zinc-200 dark:hover:bg-zinc-700
+                         transition-all duration-200
+                         focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+              aria-label="Toggle dark mode"
+            >
+              {mounted && (theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              ))}
+            </button>
+
+            <div className="flex items-center gap-2 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/60 dark:border-emerald-800/60 px-3 py-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span className="text-[0.65rem] font-semibold text-emerald-700 dark:text-emerald-400 tracking-wide">
+                AI ENGINE ONLINE
+              </span>
+            </div>
           </div>
         </div>
       </header>
@@ -316,14 +344,14 @@ export default function WaterDashboard() {
             className={`lg:col-span-3 ${glass} rounded-2xl p-5 flex flex-col ${glassHover}`}
           >
             <div className="flex items-center gap-2.5 mb-1">
-              <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 text-indigo-600">
+              <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">
                 <Activity className="h-4 w-4" />
               </div>
-              <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 uppercase">
+              <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 dark:text-zinc-100 uppercase">
                 Field Report
               </h2>
             </div>
-            <p className="text-[0.65rem] text-zinc-400 mb-4 ml-[2.625rem]">
+            <p className="text-[0.65rem] text-zinc-400 dark:text-zinc-500 mb-4 ml-[2.625rem]">
               Submit data for predictive risk analysis.
             </p>
 
@@ -335,7 +363,7 @@ export default function WaterDashboard() {
               <div>
                 <label
                   htmlFor="Report_Type"
-                  className="flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500 uppercase tracking-wider mb-1"
+                  className="flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1"
                 >
                   <FileWarning className="h-3 w-3" />
                   Report Type
@@ -345,7 +373,7 @@ export default function WaterDashboard() {
                   name="Report_Type"
                   value={formData.Report_Type}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-3 py-2 text-sm text-zinc-800
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 backdrop-blur px-3 py-2 text-sm text-zinc-800 dark:text-zinc-200
                              focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all duration-200 outline-none"
                 >
                   <option value="Leak">Leak</option>
@@ -396,7 +424,7 @@ export default function WaterDashboard() {
                 <div>
                   <label
                     htmlFor="Latitude"
-                    className="flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500 uppercase tracking-wider mb-1"
+                    className="flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1"
                   >
                     <MapPin className="h-3 w-3" />
                     Lat
@@ -412,14 +440,14 @@ export default function WaterDashboard() {
                     onChange={handleChange}
                     required
                     placeholder="17.59"
-                    className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-3 py-2 text-sm text-zinc-800
+                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 backdrop-blur px-3 py-2 text-sm text-zinc-800 dark:text-zinc-200
                                focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all duration-200 outline-none"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="Longitude"
-                    className="flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500 uppercase tracking-wider mb-1"
+                    className="flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1"
                   >
                     <MapPin className="h-3 w-3" />
                     Lng
@@ -435,7 +463,7 @@ export default function WaterDashboard() {
                     onChange={handleChange}
                     required
                     placeholder="78.43"
-                    className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-3 py-2 text-sm text-zinc-800
+                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 backdrop-blur px-3 py-2 text-sm text-zinc-800 dark:text-zinc-200
                                focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all duration-200 outline-none"
                   />
                 </div>
@@ -445,7 +473,7 @@ export default function WaterDashboard() {
               <div>
                 <label
                   htmlFor="Days_Since_Last_Issue"
-                  className="flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500 uppercase tracking-wider mb-1"
+                  className="flex items-center gap-1.5 text-[0.65rem] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1"
                 >
                   <Calendar className="h-3 w-3" />
                   Days Since Last Issue
@@ -459,7 +487,7 @@ export default function WaterDashboard() {
                   onChange={handleChange}
                   required
                   placeholder="15"
-                  className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-3 py-2 text-sm text-zinc-800
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 backdrop-blur px-3 py-2 text-sm text-zinc-800 dark:text-zinc-200
                              focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all duration-200 outline-none"
                 />
               </div>
@@ -498,9 +526,9 @@ export default function WaterDashboard() {
           <section
             className={`lg:col-span-5 rounded-2xl p-5 transition-all duration-500 ${
               isDanger
-                ? "bg-rose-50/80 backdrop-blur-xl border border-rose-300/50 shadow-[0_8px_32px_rgba(225,29,72,0.1)]"
+                ? "bg-rose-50/80 dark:bg-rose-950/40 backdrop-blur-xl border border-rose-300/50 dark:border-rose-800/50 shadow-[0_8px_32px_rgba(225,29,72,0.1)]"
                 : isSafe
-                  ? "bg-emerald-50/80 backdrop-blur-xl border border-emerald-300/50 shadow-[0_8px_32px_rgba(16,185,129,0.1)]"
+                  ? "bg-emerald-50/80 dark:bg-emerald-950/40 backdrop-blur-xl border border-emerald-300/50 dark:border-emerald-800/50 shadow-[0_8px_32px_rgba(16,185,129,0.1)]"
                   : `${glass}`
             }`}
           >
@@ -510,10 +538,10 @@ export default function WaterDashboard() {
                 <div
                   className={`flex items-center justify-center h-8 w-8 rounded-xl ${
                     isDanger
-                      ? "bg-rose-200/60 text-rose-600"
+                      ? "bg-rose-200/60 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400"
                       : isSafe
-                        ? "bg-emerald-200/60 text-emerald-600"
-                        : "bg-zinc-100 text-zinc-400"
+                        ? "bg-emerald-200/60 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400"
+                        : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"
                   }`}
                 >
                   {isDanger ? (
@@ -527,10 +555,10 @@ export default function WaterDashboard() {
                 <h2
                   className={`text-sm font-extrabold tracking-tight uppercase ${
                     isDanger
-                      ? "text-rose-800"
+                      ? "text-rose-800 dark:text-rose-300"
                       : isSafe
-                        ? "text-emerald-800"
-                        : "text-zinc-800"
+                        ? "text-emerald-800 dark:text-emerald-300"
+                        : "text-zinc-800 dark:text-zinc-200"
                   }`}
                 >
                   AI Risk Assessment
@@ -552,12 +580,12 @@ export default function WaterDashboard() {
 
             {/* placeholder */}
             {!result && !error && !loading && (
-              <div className="flex flex-col items-center justify-center py-12 text-zinc-300">
+              <div className="flex flex-col items-center justify-center py-12 text-zinc-300 dark:text-zinc-600">
                 <Gauge className="h-14 w-14 mb-3 stroke-[1]" />
-                <p className="text-sm font-semibold text-zinc-400">
+                <p className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">
                   Awaiting field data…
                 </p>
-                <p className="text-xs text-zinc-400 mt-1">
+                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
                   Submit a report to activate AI analysis.
                 </p>
               </div>
@@ -581,13 +609,13 @@ export default function WaterDashboard() {
 
             {/* error */}
             {error && (
-              <div className="rounded-xl bg-rose-100/60 border border-rose-200 p-4 flex items-start gap-3">
+              <div className="rounded-xl bg-rose-100/60 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800/50 p-4 flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-bold text-rose-800">
+                  <p className="text-sm font-bold text-rose-800 dark:text-rose-300">
                     Connection Error
                   </p>
-                  <p className="text-xs text-rose-600 mt-0.5">{error}</p>
+                  <p className="text-xs text-rose-600 dark:text-rose-400 mt-0.5">{error}</p>
                 </div>
               </div>
             )}
@@ -601,16 +629,16 @@ export default function WaterDashboard() {
                   <div
                     className={`rounded-2xl p-4 transition-all duration-300 ${
                       isDanger
-                        ? "bg-gradient-to-br from-rose-100/80 to-rose-50/60 border border-rose-200/40"
-                        : "bg-gradient-to-br from-emerald-100/80 to-emerald-50/60 border border-emerald-200/40"
+                        ? "bg-gradient-to-br from-rose-100/80 to-rose-50/60 dark:from-rose-900/40 dark:to-rose-950/30 border border-rose-200/40 dark:border-rose-800/30"
+                        : "bg-gradient-to-br from-emerald-100/80 to-emerald-50/60 dark:from-emerald-900/40 dark:to-emerald-950/30 border border-emerald-200/40 dark:border-emerald-800/30"
                     }`}
                   >
-                    <p className="text-[0.55rem] uppercase tracking-[0.15em] font-bold text-zinc-500 mb-1.5">
+                    <p className="text-[0.55rem] uppercase tracking-[0.15em] font-bold text-zinc-500 dark:text-zinc-400 mb-1.5">
                       Severity
                     </p>
                     <p
                       className={`text-xl font-extrabold tracking-tight ${
-                        isDanger ? "text-rose-700" : "text-emerald-700"
+                        isDanger ? "text-rose-700 dark:text-rose-400" : "text-emerald-700 dark:text-emerald-400"
                       }`}
                     >
                       {result.prediction}
@@ -621,24 +649,24 @@ export default function WaterDashboard() {
                   <div
                     className={`rounded-2xl p-4 transition-all duration-300 ${
                       isDanger
-                        ? "bg-gradient-to-br from-rose-100/80 to-rose-50/60 border border-rose-200/40"
-                        : "bg-gradient-to-br from-emerald-100/80 to-emerald-50/60 border border-emerald-200/40"
+                        ? "bg-gradient-to-br from-rose-100/80 to-rose-50/60 dark:from-rose-900/40 dark:to-rose-950/30 border border-rose-200/40 dark:border-rose-800/30"
+                        : "bg-gradient-to-br from-emerald-100/80 to-emerald-50/60 dark:from-emerald-900/40 dark:to-emerald-950/30 border border-emerald-200/40 dark:border-emerald-800/30"
                     }`}
                   >
-                    <p className="text-[0.55rem] uppercase tracking-[0.15em] font-bold text-zinc-500 mb-1.5">
+                    <p className="text-[0.55rem] uppercase tracking-[0.15em] font-bold text-zinc-500 dark:text-zinc-400 mb-1.5">
                       Confidence
                     </p>
                     <div className="flex items-baseline gap-0.5">
                       <span
                         className={`text-2xl font-extrabold tabular-nums tracking-tight ${
-                          isDanger ? "text-rose-700" : "text-emerald-700"
+                          isDanger ? "text-rose-700 dark:text-rose-400" : "text-emerald-700 dark:text-emerald-400"
                         }`}
                       >
                         {result.confidence}
                       </span>
-                      <span className="text-xs font-bold text-zinc-400">%</span>
+                      <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500">%</span>
                     </div>
-                    <div className="mt-2 h-1.5 rounded-full bg-white/80 overflow-hidden">
+                    <div className="mt-2 h-1.5 rounded-full bg-white/80 dark:bg-zinc-800/80 overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-1000 ease-out ${
                           isDanger ? "bg-rose-500" : "bg-emerald-500"
@@ -652,8 +680,8 @@ export default function WaterDashboard() {
                   <div
                     className={`rounded-2xl p-4 flex flex-col items-center justify-center text-center transition-all duration-300 ${
                       isDanger
-                        ? "bg-gradient-to-br from-rose-100/80 to-rose-50/60 border border-rose-200/40"
-                        : "bg-gradient-to-br from-emerald-100/80 to-emerald-50/60 border border-emerald-200/40"
+                        ? "bg-gradient-to-br from-rose-100/80 to-rose-50/60 dark:from-rose-900/40 dark:to-rose-950/30 border border-rose-200/40 dark:border-rose-800/30"
+                        : "bg-gradient-to-br from-emerald-100/80 to-emerald-50/60 dark:from-emerald-900/40 dark:to-emerald-950/30 border border-emerald-200/40 dark:border-emerald-800/30"
                     }`}
                   >
                     {isDanger ? (
@@ -663,7 +691,7 @@ export default function WaterDashboard() {
                     )}
                     <p
                       className={`text-sm font-extrabold tracking-tight ${
-                        isDanger ? "text-rose-700" : "text-emerald-700"
+                        isDanger ? "text-rose-700 dark:text-rose-400" : "text-emerald-700 dark:text-emerald-400"
                       }`}
                     >
                       {result.alert_level}
@@ -675,8 +703,8 @@ export default function WaterDashboard() {
                 <div
                   className={`rounded-2xl p-4 border transition-all duration-300 ${
                     isDanger
-                      ? "bg-rose-50/40 border-rose-200/30"
-                      : "bg-emerald-50/40 border-emerald-200/30"
+                      ? "bg-rose-50/40 dark:bg-rose-950/30 border-rose-200/30 dark:border-rose-800/30"
+                      : "bg-emerald-50/40 dark:bg-emerald-950/30 border-emerald-200/30 dark:border-emerald-800/30"
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-3">
@@ -685,7 +713,7 @@ export default function WaterDashboard() {
                         isDanger ? "text-rose-500" : "text-emerald-500"
                       }`}
                     />
-                    <h3 className="text-[0.55rem] font-bold uppercase tracking-[0.15em] text-zinc-500">
+                    <h3 className="text-[0.55rem] font-bold uppercase tracking-[0.15em] text-zinc-500 dark:text-zinc-400">
                       AI Confidence Analysis
                     </h3>
                   </div>
@@ -708,17 +736,17 @@ export default function WaterDashboard() {
                       },
                     ].map((metric) => (
                       <div key={metric.label} className="text-center">
-                        <p className="text-[0.5rem] uppercase tracking-widest font-semibold text-zinc-400 mb-0.5">
+                        <p className="text-[0.5rem] uppercase tracking-widest font-semibold text-zinc-400 dark:text-zinc-500 mb-0.5">
                           {metric.label}
                         </p>
                         <p
                           className={`text-base font-extrabold tabular-nums ${
-                            isDanger ? "text-rose-700" : "text-emerald-700"
+                            isDanger ? "text-rose-700 dark:text-rose-400" : "text-emerald-700 dark:text-emerald-400"
                           }`}
                         >
                           {metric.value}
                         </p>
-                        <p className="text-[0.5rem] text-zinc-400 mt-0.5">
+                        <p className="text-[0.5rem] text-zinc-400 dark:text-zinc-500 mt-0.5">
                           {metric.sub}
                         </p>
                       </div>
@@ -734,21 +762,21 @@ export default function WaterDashboard() {
             {/* ---- Geospatial Tracking Map ---- */}
             <section className={`${glass} rounded-2xl p-5 ${glassHover}`}>
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 text-indigo-600">
+                <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">
                   <Globe className="h-4 w-4" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 uppercase">
+                  <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 dark:text-zinc-100 uppercase">
                     Geospatial Tracking
                   </h2>
-                  <p className="text-[0.6rem] text-zinc-400 mt-0.5">
+                  <p className="text-[0.6rem] text-zinc-400 dark:text-zinc-500 mt-0.5">
                     {hasCoords
                       ? `${lat.toFixed(3)}°N, ${lng.toFixed(3)}°E`
                       : "Enter coordinates to locate"}
                   </p>
                 </div>
               </div>
-              <div className="rounded-xl overflow-hidden border border-zinc-200/60 aspect-[4/3]">
+              <div className="rounded-xl overflow-hidden border border-zinc-200/60 dark:border-zinc-700/60 aspect-[4/3]">
                 <MapComponent latitude={mapLat} longitude={mapLng} />
               </div>
             </section>
@@ -756,14 +784,14 @@ export default function WaterDashboard() {
             {/* ---- Live Risk Distribution — Donut ---- */}
             <section className={`${glass} rounded-2xl p-5 ${glassHover}`}>
               <div className="flex items-center gap-2.5 mb-2">
-                <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 text-indigo-600">
+                <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">
                   <PieIcon className="h-4 w-4" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 uppercase">
+                  <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 dark:text-zinc-100 uppercase">
                     Live Risk Distribution
                   </h2>
-                  <p className="text-[0.6rem] text-zinc-400 mt-0.5">
+                  <p className="text-[0.6rem] text-zinc-400 dark:text-zinc-500 mt-0.5">
                     Regional water zone status
                   </p>
                 </div>
@@ -802,10 +830,10 @@ export default function WaterDashboard() {
                         className="h-2.5 w-2.5 rounded-full shrink-0"
                         style={{ background: zone.color }}
                       />
-                      <span className="text-xs font-semibold text-zinc-600 flex-1">
+                      <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 flex-1">
                         {zone.name}
                       </span>
-                      <span className="text-sm font-extrabold tabular-nums text-zinc-800">
+                      <span className="text-sm font-extrabold tabular-nums text-zinc-800 dark:text-zinc-200">
                         {zone.value}%
                       </span>
                     </div>
@@ -828,10 +856,10 @@ export default function WaterDashboard() {
             {/* Recent Interventions */}
             <section className={`${glass} rounded-2xl p-5 ${glassHover}`}>
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-emerald-100 text-emerald-600">
+                <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="h-4 w-4" />
                 </div>
-                <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 uppercase">
+                <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 dark:text-zinc-100 uppercase">
                   Recent Interventions
                 </h2>
               </div>
@@ -839,13 +867,13 @@ export default function WaterDashboard() {
                 {recentInterventions.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-start gap-2.5 p-2.5 rounded-xl bg-zinc-50/80 border border-zinc-100 transition-all duration-200 hover:bg-white hover:shadow-sm"
+                    className="flex items-start gap-2.5 p-2.5 rounded-xl bg-zinc-50/80 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700/50 transition-all duration-200 hover:bg-white dark:hover:bg-zinc-800 hover:shadow-sm"
                   >
-                    <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-emerald-100 text-emerald-600 shrink-0 mt-0.5">
+                    <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
                       <item.icon className="h-3.5 w-3.5" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-zinc-700 truncate">
+                      <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 truncate">
                         {item.title}
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
@@ -865,30 +893,30 @@ export default function WaterDashboard() {
             {/* Community Insights — compact */}
             <section className={`${glass} rounded-2xl p-5 ${glassHover}`}>
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 text-indigo-600">
+                <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">
                   <Activity className="h-4 w-4" />
                 </div>
-                <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 uppercase">
+                <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 dark:text-zinc-100 uppercase">
                   SDG 6 Impact
                 </h2>
               </div>
 
               <div className="space-y-3">
-                <div className="rounded-xl bg-gradient-to-br from-rose-50/80 to-rose-100/40 border border-rose-200/40 p-3.5">
-                  <h3 className="text-[0.55rem] font-bold text-rose-600 uppercase tracking-[0.15em] mb-1">
+                <div className="rounded-xl bg-gradient-to-br from-rose-50/80 to-rose-100/40 dark:from-rose-950/40 dark:to-rose-900/20 border border-rose-200/40 dark:border-rose-800/30 p-3.5">
+                  <h3 className="text-[0.55rem] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-[0.15em] mb-1">
                     The Challenge
                   </h3>
-                  <p className="text-xs text-zinc-600 leading-relaxed font-medium">
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium">
                     Millions lack real-time water safety data, leading to
                     preventable health crises and reactive-only responses.
                   </p>
                 </div>
 
-                <div className="rounded-xl bg-gradient-to-br from-emerald-50/80 to-emerald-100/40 border border-emerald-200/40 p-3.5">
-                  <h3 className="text-[0.55rem] font-bold text-emerald-600 uppercase tracking-[0.15em] mb-1">
+                <div className="rounded-xl bg-gradient-to-br from-emerald-50/80 to-emerald-100/40 dark:from-emerald-950/40 dark:to-emerald-900/20 border border-emerald-200/40 dark:border-emerald-800/30 p-3.5">
+                  <h3 className="text-[0.55rem] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.15em] mb-1">
                     Our Impact
                   </h3>
-                  <p className="text-xs text-zinc-600 leading-relaxed font-medium">
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium">
                     <strong>95%+ accuracy</strong> predictive risk scores
                     enable proactive governance — fixing infrastructure{" "}
                     <em>before</em> contamination spreads.
@@ -904,7 +932,7 @@ export default function WaterDashboard() {
                 ].map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full bg-indigo-50 text-indigo-600 text-[0.6rem] font-semibold px-2.5 py-0.5 border border-indigo-200/40"
+                    className="rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[0.6rem] font-semibold px-2.5 py-0.5 border border-indigo-200/40 dark:border-indigo-800/40"
                   >
                     {tag}
                   </span>
@@ -916,8 +944,8 @@ export default function WaterDashboard() {
       </main>
 
       {/* ====================== FOOTER ====================== */}
-      <footer className="border-t border-zinc-200/60 bg-white/40 backdrop-blur py-4">
-        <p className="text-center text-[0.65rem] text-zinc-400 font-medium tracking-wide">
+      <footer className="border-t border-zinc-200/60 dark:border-zinc-800/60 bg-white/40 dark:bg-zinc-900/40 backdrop-blur py-4">
+        <p className="text-center text-[0.65rem] text-zinc-400 dark:text-zinc-500 font-medium tracking-wide">
           Powered by Machine Learning · Supporting UN Sustainable Development
           Goal 6 · System v3.2
         </p>

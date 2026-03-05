@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { BarChart3 } from "lucide-react";
+import { useTheme } from "next-themes";
 
 /* ---------- 7-day mock data ---------- */
 const data = [
@@ -34,8 +35,8 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl bg-white/90 backdrop-blur-xl shadow-lg ring-1 ring-white/40 px-4 py-3 text-xs">
-      <p className="font-bold text-zinc-700 mb-1.5">{label}</p>
+    <div className="rounded-xl bg-white/90 dark:bg-zinc-800/90 backdrop-blur-xl shadow-lg ring-1 ring-white/40 dark:ring-zinc-700/40 px-4 py-3 text-xs">
+      <p className="font-bold text-zinc-700 dark:text-zinc-200 mb-1.5">{label}</p>
       {payload.map((entry) => (
         <p key={entry.name} className="flex items-center gap-2" style={{ color: entry.color }}>
           <span className="inline-block h-2 w-2 rounded-full" style={{ background: entry.color }} />
@@ -51,19 +52,26 @@ function ChartTooltip({
    RiskTrendChart — 7-Day Trend (LineChart · glassmorphism)
    ================================================================ */
 export default function RiskTrendChart() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const gridColor = isDark ? "#3f3f46" : "#e4e4e7";
+  const tickColor = isDark ? "#71717a" : "#a1a1aa";
+  const axisColor = isDark ? "#3f3f46" : "#e4e4e7";
+  const dotStroke = isDark ? "#18181b" : "#fff";
+
   return (
-    <section className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.06)] rounded-2xl p-6 sm:p-7 hover:shadow-[0_12px_40px_rgba(0,0,0,0.09)] hover:-translate-y-0.5 transition-all duration-300">
+    <section className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/40 dark:border-zinc-700/40 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-6 sm:p-7 hover:shadow-[0_12px_40px_rgba(0,0,0,0.09)] dark:hover:shadow-[0_12px_40px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all duration-300">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
         <div className="flex items-center gap-2.5">
-          <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 text-indigo-600">
+          <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">
             <BarChart3 className="h-4 w-4" />
           </div>
           <div>
-            <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 uppercase">
+            <h2 className="text-sm font-extrabold tracking-tight text-zinc-800 dark:text-zinc-100 uppercase">
               7-Day Risk Trend
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
               Total reports vs. AI-predicted critical incidents
             </p>
           </div>
@@ -84,15 +92,15 @@ export default function RiskTrendChart() {
       <div className="w-full h-64 sm:h-72">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" strokeOpacity={0.5} />
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} strokeOpacity={0.5} />
             <XAxis
               dataKey="day"
-              tick={{ fontSize: 11, fill: "#a1a1aa", fontWeight: 500 }}
-              axisLine={{ stroke: "#e4e4e7" }}
+              tick={{ fontSize: 11, fill: tickColor, fontWeight: 500 }}
+              axisLine={{ stroke: axisColor }}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 11, fill: "#a1a1aa", fontWeight: 500 }}
+              tick={{ fontSize: 11, fill: tickColor, fontWeight: 500 }}
               axisLine={false}
               tickLine={false}
             />
@@ -104,8 +112,8 @@ export default function RiskTrendChart() {
               name="Total Reports"
               stroke="#6366f1"
               strokeWidth={2.5}
-              dot={{ r: 4, fill: "#6366f1", strokeWidth: 2, stroke: "#fff" }}
-              activeDot={{ r: 6, strokeWidth: 2, stroke: "#fff" }}
+              dot={{ r: 4, fill: "#6366f1", strokeWidth: 2, stroke: dotStroke }}
+              activeDot={{ r: 6, strokeWidth: 2, stroke: dotStroke }}
             />
             <Line
               type="monotone"
@@ -113,8 +121,8 @@ export default function RiskTrendChart() {
               name="Critical Incidents"
               stroke="#f43f5e"
               strokeWidth={2.5}
-              dot={{ r: 4, fill: "#f43f5e", strokeWidth: 2, stroke: "#fff" }}
-              activeDot={{ r: 6, strokeWidth: 2, stroke: "#fff" }}
+              dot={{ r: 4, fill: "#f43f5e", strokeWidth: 2, stroke: dotStroke }}
+              activeDot={{ r: 6, strokeWidth: 2, stroke: dotStroke }}
             />
           </LineChart>
         </ResponsiveContainer>
