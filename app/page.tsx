@@ -47,7 +47,7 @@ export default function WaterDashboard() {
         Days_Since_Last_Issue: parseInt(formData.Days_Since_Last_Issue, 10),
       };
 
-      const res = await fetch("http://127.0.0.1:8000/predict", {
+      const res = await fetch("https://water-management-hub.onrender.com/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
