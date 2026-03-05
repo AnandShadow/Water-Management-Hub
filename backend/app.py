@@ -5,7 +5,7 @@ Automatically detects feature/target columns from dataset.csv,
 trains (or loads) a RandomForestClassifier, and exposes a /predict endpoint.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
@@ -224,6 +224,87 @@ async def predict(metrics: WaterMetrics):
         "prediction": prediction,
         "confidence": round(confidence, 2),
         "alert_level": alert_level,
+    }
+
+
+@app.post("/sms-webhook")
+async def sms_webhook(Body: str = Form(""), From: str = Form("")):
+    """
+    Simulated Twilio SMS/WhatsApp webhook.
+    Rural users can text a keyword (Leak, Contamination, Shortage) to report
+    an issue without needing a smartphone or internet browser.
+    """
+    if model is None:
+        raise HTTPException(status_code=503, detail="Model not loaded yet")
+
+    # --- Parse report type from SMS body ---
+    body_lower = Body.strip().lower()
+    report_map = {
+        "leak": "Leak",
+        "contamination": "Contamination",
+        "shortage": "Shortage",
+    }
+    report_type = None
+    for keyword, value in report_map.items():
+        if keyword in body_lower:
+            report_type = value
+            break
+
+    if report_type is None:
+        return {
+            "sms_response": (
+                "Sorry, we could not understand your report. "
+                "Please reply with one of: Leak, Contamination, or Shortage."
+            )
+        }
+
+    # --- Default coordinates & days for SMS-based reports ---
+    default_lat = 17.38
+    default_lng = 78.48
+    default_days = 1
+
+    # --- Build feature row (same logic as /predict) ---
+    row = {
+        "Latitude": default_lat,
+        "Longitude": default_lng,
+        "Report_Type": report_type,
+        "Days_Since_Last_Issue": default_days,
+    }
+
+    for col in _categorical_features:
+        try:
+            row[col] = label_encoders[col].transform([row[col]])[0]
+        except ValueError:
+            row[col] = 0
+
+    input_features = np.array([[row[col] for col in FEATURE_COLUMNS]])
+
+    pred_encoded = model.predict(input_features)[0]
+    probabilities = model.predict_proba(input_features)[0]
+    confidence = float(np.max(probabilities) * 100)
+    prediction = target_encoder.inverse_transform([pred_encoded])[0]
+
+    # --- Build human-readable SMS response ---
+    severity = prediction.upper()
+    if prediction in ("Critical", "High"):
+        action = "Municipal authorities have been dispatched."
+    elif prediction == "Medium":
+        action = "Your area is under observation. A crew will inspect soon."
+    else:
+        action = "No immediate danger detected. We will continue monitoring."
+
+    sms_response = (
+        f"Thank you. Your report of {report_type} has been logged. "
+        f"AI Severity: {severity} (Confidence: {round(confidence, 1)}%). "
+        f"{action}"
+    )
+
+    return {
+        "sms_response": sms_response,
+        "from": From,
+        "report_type": report_type,
+        "prediction": prediction,
+        "confidence": round(confidence, 2),
     }
 
 

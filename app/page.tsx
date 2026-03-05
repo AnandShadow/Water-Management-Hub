@@ -34,6 +34,7 @@ import {
   Navigation,
 } from "lucide-react";
 import RiskTrendChart from "./components/RiskTrendChart";
+import MapComponent from "./components/MapComponent";
 
 /* ---------- Types ---------- */
 interface PredictionResult {
@@ -237,15 +238,12 @@ export default function WaterDashboard() {
     ? Math.min(100, +(result.confidence + 1.4).toFixed(1))
     : null;
 
-  /* ---- map iframe src (sanitised) ---- */
+  /* ---- map coordinates ---- */
   const lat = parseFloat(formData.Latitude);
   const lng = parseFloat(formData.Longitude);
   const hasCoords = !isNaN(lat) && !isNaN(lng);
-  const mapSrc = hasCoords
-    ? `https://maps.google.com/maps?q=${encodeURIComponent(
-        `${lat},${lng}`
-      )}&z=15&output=embed`
-    : `https://maps.google.com/maps?q=20.5937,78.9629&z=5&output=embed`;
+  const mapLat = hasCoords ? lat : 20.5937;
+  const mapLng = hasCoords ? lng : 78.9629;
 
   /* ---- glass helpers ---- */
   const glass =
@@ -751,17 +749,7 @@ export default function WaterDashboard() {
                 </div>
               </div>
               <div className="rounded-xl overflow-hidden border border-zinc-200/60 aspect-[4/3]">
-                <iframe
-                  title="Geospatial Tracking Map"
-                  src={mapSrc}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  className="w-full h-full"
-                />
+                <MapComponent latitude={mapLat} longitude={mapLng} />
               </div>
             </section>
 
