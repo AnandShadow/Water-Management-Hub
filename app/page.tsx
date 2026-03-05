@@ -31,6 +31,7 @@ import {
   Brain,
   Globe,
   PieChart as PieIcon,
+  Navigation,
 } from "lucide-react";
 import RiskTrendChart from "./components/RiskTrendChart";
 
@@ -113,10 +114,44 @@ export default function WaterDashboard() {
   const [result, setResult] = useState<PredictionResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [locationStatus, setLocationStatus] = useState<
+    "idle" | "locating" | "success" | "error"
+  >("idle");
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus("error");
+      setLocationError("Geolocation is not supported by your browser.");
+      return;
+    }
+    setLocationStatus("locating");
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData((prev) => ({
+          ...prev,
+          Latitude: position.coords.latitude.toFixed(4),
+          Longitude: position.coords.longitude.toFixed(4),
+        }));
+        setLocationStatus("success");
+      },
+      (err) => {
+        setLocationStatus("error");
+        const messages: Record<number, string> = {
+          1: "Permission denied. Please allow location access.",
+          2: "Position unavailable. Try again.",
+          3: "Request timed out. Try again.",
+        };
+        setLocationError(messages[err.code] || "Unable to get location.");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,10 +160,43 @@ export default function WaterDashboard() {
     setResult(null);
 
     try {
+      const parsedLat = parseFloat(formData.Latitude);
+      const parsedLng = parseFloat(formData.Longitude);
+
+      // 1. Impossible global coordinates
+      if (
+        isNaN(parsedLat) ||
+        isNaN(parsedLng) ||
+        parsedLat < -90 ||
+        parsedLat > 90 ||
+        parsedLng < -180 ||
+        parsedLng > 180
+      ) {
+        alert(
+          "Invalid coordinates: Latitude must be between -90 and 90, Longitude between -180 and 180."
+        );
+        setLoading(false);
+        return;
+      }
+
+      // 2. Phase 1 Pilot Geofence — Telangana region
+      if (
+        parsedLat < 15.0 ||
+        parsedLat > 20.0 ||
+        parsedLng < 77.0 ||
+        parsedLng > 82.0
+      ) {
+        alert(
+          "Phase 1 Pilot Restriction: Coordinates fall outside the Telangana municipal zone (Lat 15.0–20.0, Lng 77.0–82.0). The pilot is currently restricted to local municipal zones only."
+        );
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         Report_Type: formData.Report_Type,
-        Latitude: parseFloat(formData.Latitude),
-        Longitude: parseFloat(formData.Longitude),
+        Latitude: parsedLat,
+        Longitude: parsedLng,
         Days_Since_Last_Issue: parseInt(formData.Days_Since_Last_Issue, 10),
       };
 
@@ -288,6 +356,43 @@ export default function WaterDashboard() {
                 </select>
               </div>
 
+              {/* Use My Location */}
+              <button
+                type="button"
+                onClick={handleGetLocation}
+                disabled={locationStatus === "locating"}
+                className="w-full flex items-center justify-center gap-2 rounded-xl
+                           bg-gradient-to-r from-sky-500 to-cyan-500
+                           hover:from-sky-400 hover:to-cyan-400
+                           text-white font-semibold py-2 px-3 text-xs tracking-wide
+                           shadow-md shadow-sky-500/20
+                           focus:outline-none focus:ring-4 focus:ring-sky-500/20
+                           transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed
+                           hover:-translate-y-0.5 active:translate-y-0"
+              >
+                {locationStatus === "locating" ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Locating…
+                  </>
+                ) : locationStatus === "success" ? (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Location Set
+                  </>
+                ) : (
+                  <>
+                    <Navigation className="h-3.5 w-3.5" />
+                    Use My Location
+                  </>
+                )}
+              </button>
+              {locationStatus === "error" && locationError && (
+                <p className="text-[0.6rem] text-rose-500 font-medium -mt-1">
+                  {locationError}
+                </p>
+              )}
+
               {/* Lat / Lng */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -303,10 +408,12 @@ export default function WaterDashboard() {
                     step="any"
                     id="Latitude"
                     name="Latitude"
+                    min={-90}
+                    max={90}
                     value={formData.Latitude}
                     onChange={handleChange}
                     required
-                    placeholder="29.005"
+                    placeholder="17.59"
                     className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-3 py-2 text-sm text-zinc-800
                                focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all duration-200 outline-none"
                   />
@@ -324,10 +431,12 @@ export default function WaterDashboard() {
                     step="any"
                     id="Longitude"
                     name="Longitude"
+                    min={-180}
+                    max={180}
                     value={formData.Longitude}
                     onChange={handleChange}
                     required
-                    placeholder="73.712"
+                    placeholder="78.43"
                     className="w-full rounded-xl border border-zinc-200 bg-white/80 backdrop-blur px-3 py-2 text-sm text-zinc-800
                                focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all duration-200 outline-none"
                   />
