@@ -7,7 +7,7 @@ trains (or loads) a RandomForestClassifier, and exposes a /predict endpoint.
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -61,16 +61,16 @@ def _detect_columns() -> None:
 # Pydantic request model
 # ---------------------------------------------------------------------------
 class WaterMetrics(BaseModel):
-    Latitude: float
-    Longitude: float
+    latitude: float
+    longitude: float
     Report_Type: str
     Days_Since_Last_Issue: int
 
     class Config:
         json_schema_extra = {
             "example": {
-                "Latitude": 29.005,
-                "Longitude": 73.712,
+                "latitude": 29.005,
+                "longitude": 73.712,
                 "Report_Type": "Contamination",
                 "Days_Since_Last_Issue": 10,
             }
@@ -185,8 +185,8 @@ async def predict(metrics: WaterMetrics):
 
     # Build a single-row dataframe so column order matches training
     row = {
-        "Latitude": metrics.Latitude,
-        "Longitude": metrics.Longitude,
+        "Latitude": metrics.latitude,
+        "Longitude": metrics.longitude,
         "Report_Type": metrics.Report_Type,
         "Days_Since_Last_Issue": metrics.Days_Since_Last_Issue,
     }
